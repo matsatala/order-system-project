@@ -1,4 +1,4 @@
-package pl.projekt.paymentService;
+package pl.projekt.infrastructureService;
 
 import java.io.Serializable;
 
@@ -7,5 +7,6 @@ public record PaymentEvent(
         String customerEmail,
         Double amountEur,
         PaymentStatus status
+
 ) implements Serializable {
 }

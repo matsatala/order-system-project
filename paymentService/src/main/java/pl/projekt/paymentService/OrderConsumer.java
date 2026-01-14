@@ -21,7 +21,7 @@ public class OrderConsumer {
         Double rate = currencyService.getLastKnownRate();
         Double totalEur = event.amount()/rate;
 
-        var confirmation = new PaymentEvent(event.orderId(), event.customerEmail(),totalEur, "SUCCESS");
+        var confirmation = new PaymentEvent(event.orderId(), event.customerEmail(),totalEur, PaymentStatus.SUCCESS);
 
         rabbitTemplate.convertAndSend("payment_exchange","payment_routing_key",confirmation);
 
