@@ -20,7 +20,7 @@ public class EmailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom("sklep@mikroserwisy.pl");
         message.setTo(to);
-        message.setSubject("Potwierdzenie zamóœienia: "+orderId);
+        message.setSubject("Potwierdzenie zamówienia: "+orderId);
         message.setText("Twoje zamówienie zostało opłacone. Kwota: "+String.format("%.2f", amount)+ " EUR");
 
         mailSender.send(message);

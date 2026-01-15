@@ -22,7 +22,6 @@ public class OrderConsumer {
         Double totalEur = event.amount()/rate;
 
         var confirmation = new PaymentEvent(event.orderId(), event.customerEmail(),totalEur, PaymentStatus.SUCCESS);
-
         rabbitTemplate.convertAndSend("payment_exchange","payment_routing_key",confirmation);
 
         System.out.println("Płatność przetworzona. Wysłano potwierdzenie dla: " + event.orderId());

@@ -21,15 +21,30 @@ public class OrderController {
         this.rabbitTemplate = rabbitTemplate;
     }
     @PostMapping
-    public Order createOrder(@RequestBody Order order){
+    public Order createOrder(@RequestBody Order order) {
+        // 1. Ustawiamy status początkowy
         order.setStatus("PENDING");
+
+        // 2. Zapisujemy w bazie - TO TUTAJ Baza Danych nadaje ID (np. 1)
         Order savedOrder = orderRepository.save(order);
 
+        // 3. Tworzymy obiekt zdarzenia (DTO) zamiast wysyłać całą encję
+        // To naprawia błąd w InfraService (ID nie będzie już null)
+        OrderEvent event = new OrderEvent(
+                savedOrder.getId(),            // <-- Tu bierzemy ID z bazy!
+                savedOrder.getCustomerEmail(),
+                savedOrder.getAmount(),
+                savedOrder.getStatus()
+        );
+        // 4. Wysyłamy zdarzenie (Event) do RabbitMQ
         rabbitTemplate.convertAndSend(
                 RabbitMqConfig.EXCHANGE,
                 RabbitMqConfig.ROUTING_KEY,
-                savedOrder
+                event // <-- Wysyłamy event, a nie encję
         );
+
+        // 5. Zwracamy obiekt do klienta (API)
         return savedOrder;
+
     }
 }
