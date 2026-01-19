@@ -23,6 +23,18 @@ services:
     image: delfer/alpine-ftp-server
     environment:
       - USERS=user|pass
-    ports:
+          ports:
       - "21:21"
       - "21000-21010:21000-21010"
+  infra-service
+    build: ./infrastructureService
+    ports:
+      -"8081:8081"
+    depends_on:
+      - order-db
+      - rabbitmq
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - FTP_SERVER=ftp-server          
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}

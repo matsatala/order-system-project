@@ -5,6 +5,9 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 @Service
 public class PaymentListener {
 
@@ -23,26 +26,29 @@ public class PaymentListener {
         System.out.println("---Otrzymano potwierdzenie płatności dla zamówienia: "+event.orderId()+"---");
 
         if (PaymentStatus.SUCCESS.equals(event.status())){
+            String invoiceContent = "FAKTURA VAT\n" +
+                    "Zamówienie: " + event.orderId() + "\n" +
+                    "Klient: " + event.customerEmail() + "\n" +
+                    "Kwota: " + new BigDecimal(event.amountEur()).setScale(2, RoundingMode.HALF_EVEN) + " EUR\n" +
+                    "Status: OPŁACONE";
+            String filename = "faktura_"+event.orderId()+".txt";
+            try {
+                ftpService.uploadInvoice(event.orderId().toString(),invoiceContent,filename);
+            }catch (Exception e){
+                System.err.println(e.getMessage());
+            }
             try {
                 emailService.sendEmail(
                         event.customerEmail(),
                         event.orderId().toString(),
-                        event.amountEur()
+                        event.amountEur(),
+                        invoiceContent,
+                        filename
                 );
             }catch (Exception e){
                 System.err.println("Błąd wysyłki maila: "+e.getMessage());
             }
-            try {
-                String invoiceContent = "FAKTURA VAT\n" +
-                        "Zamówienie: " + event.orderId() + "\n" +
-                        "Klient: " + event.customerEmail() + "\n" +
-                        "Kwota: " + event.amountEur() + " EUR\n" +
-                        "Status: OPŁACONE";
 
-                ftpService.uploadInvoice(event.orderId().toString(),invoiceContent);
-            }catch (Exception e){
-                System.err.println(e.getMessage());
-            }
         } else {
             System.out.println("Płatność nieudana");
         }

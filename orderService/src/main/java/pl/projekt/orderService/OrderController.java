@@ -2,11 +2,10 @@ package pl.projekt.orderService;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import pl.projekt.orderService.entities.Order;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -23,28 +22,43 @@ public class OrderController {
     @PostMapping
     public Order createOrder(@RequestBody Order order) {
         // 1. Ustawiamy status początkowy
-        order.setStatus("PENDING");
+        order.setStatus("UNPAID");
 
         // 2. Zapisujemy w bazie - TO TUTAJ Baza Danych nadaje ID (np. 1)
+        return orderRepository.save(order);
+    }
+
+    @PostMapping("/{id}/pay")
+    public String payOrder(@PathVariable Long id) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Zamówienie nie istnieje!"));
+
+        if (!"UNPAID".equals(order.getStatus())) {
+            return "Zamówienie zostało już opłacone lub jest w trakcie przetwarzania.";
+        }
+
+        // Zmieniamy status
+        order.setStatus("PENDING");
         Order savedOrder = orderRepository.save(order);
 
-        // 3. Tworzymy obiekt zdarzenia (DTO) zamiast wysyłać całą encję
-        // To naprawia błąd w InfraService (ID nie będzie już null)
+        // Dopiero TERAZ wysyłamy do RabbitMQ -> Payment -> Infra
         OrderEvent event = new OrderEvent(
-                savedOrder.getId(),            // <-- Tu bierzemy ID z bazy!
+                savedOrder.getId(),
                 savedOrder.getCustomerEmail(),
                 savedOrder.getAmount(),
                 savedOrder.getStatus()
         );
-        // 4. Wysyłamy zdarzenie (Event) do RabbitMQ
+
         rabbitTemplate.convertAndSend(
                 RabbitMqConfig.EXCHANGE,
                 RabbitMqConfig.ROUTING_KEY,
-                event // <-- Wysyłamy event, a nie encję
+                event
         );
 
-        // 5. Zwracamy obiekt do klienta (API)
-        return savedOrder;
-
+        return "Zamówienie nr " + id + " zostało opłacone i wysłane do realizacji.";
+    }
+    @GetMapping("/{email}")
+    public List<Order> getOrdersByEmail(@PathVariable String email) {
+        return orderRepository.findByCustomerEmail(email);
     }
 }

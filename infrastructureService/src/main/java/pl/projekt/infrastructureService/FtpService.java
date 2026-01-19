@@ -11,7 +11,7 @@ import java.io.InputStream;
 @Service
 public class FtpService {
 
-    public void uploadInvoice(String orderId, String content){
+    public void uploadInvoice(String orderId, String content, String filename){
         FTPClient ftpClient = new FTPClient();
         try {
             ftpClient.connect("localhost",21);
@@ -20,7 +20,7 @@ public class FtpService {
             ftpClient.setFileType(FTPClient.BINARY_FILE_TYPE);
 
             InputStream inputStream = new ByteArrayInputStream(content.getBytes());
-            String filename = "faktura_"+orderId+".txt";
+
 
             boolean done = ftpClient.storeFile(filename, inputStream);
             if (done) System.out.println("Faktura zapisana na FTP");
