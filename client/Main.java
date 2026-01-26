@@ -6,7 +6,9 @@ import java.util.Scanner;
 
 public class Main {
 
-    private static final String API_URL = "http://localhost:8081/api/orders";
+    private static final String API_URL = System.getenv("API_URL") != null
+            ? System.getenv("API_URL")
+            : "http://localhost:8081/api/orders";
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);

@@ -1,16 +1,55 @@
-
 services:
+  # ------------------------------------------------------------
+  # 1. ORDER SERVICE (Backend)
+  # Naprawione: dodano environment (baza) i ports
+  # ------------------------------------------------------------
   order-service:
     build: ./orderService
+    restart: always             # Wstanie ponownie, jeśli baza jeszcze nie gotowa
+    ports:
+      - "8081:8081"             # Wystawiamy port, żebyś mógł testować z Postmana/przeglądarki
+    depends_on:
+      - order-db
+      - rabbitmq
+    environment:
+      # Kluczowe: Mówimy, że baza jest pod nazwą serwisu 'order-db'
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://order-db:5432/orders_db
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=password
+      # Konfiguracja Rabbita
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+
+  # ------------------------------------------------------------
+  # 2. INFRA SERVICE
+  # Naprawione: dodano powiązanie z FTP i RabbitMQ
+  # ------------------------------------------------------------
   infra-service:
     build: ./infrastructureService
+    depends_on:
+      - rabbitmq
+      - ftp-server
     environment:
       - SPRING_MAIL_USERNAME=${MAIL_USER}
       - SPRING_MAIL_PASSWORD=${MAIL_PASS}
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      # Jeśli używasz zmiennej w kodzie do FTP:
+      - FTP_SERVER=ftp-server
+
+  # ------------------------------------------------------------
+  # 3. PAYMENT SERVICE
+  # Naprawione: dodano konfigurację RabbitMQ
+  # ------------------------------------------------------------
   payment-service:
     build: ./paymentService
     depends_on:
       - rabbitmq
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+
+  # ------------------------------------------------------------
+  # 4. RABBITMQ
+  # ------------------------------------------------------------
   rabbitmq:
     image: rabbitmq:3-management
     ports:
@@ -18,7 +57,9 @@ services:
       - "15672:15672"
     container_name: rabbitmq-broker
 
-  # Baza danych dla Order Service
+  # ------------------------------------------------------------
+  # 5. BAZA DANYCH
+  # ------------------------------------------------------------
   order-db:
     image: postgres:15
     environment:
@@ -27,8 +68,17 @@ services:
       POSTGRES_PASSWORD: password
     ports:
       - "5432:5432"
+    restart: always
+    # Dodajemy healthcheck, żeby order-service wiedział, kiedy baza jest gotowa (opcjonalne, ale zalecane)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d orders_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # Serwer FTP dla Infra Service (do faktur)
+  # ------------------------------------------------------------
+  # 6. FTP SERVER
+  # ------------------------------------------------------------
   ftp-server:
     image: delfer/alpine-ftp-server
     environment:
@@ -37,3 +87,14 @@ services:
       - "21:21"
       - "21000-21010:21000-21010"
 
+  # ------------------------------------------------------------
+  # 7. CLIENT (CLI)
+  # ------------------------------------------------------------
+  store-client:
+    build: ./client
+    environment:
+      - API_URL=http://order-service:8081/api/orders
+    stdin_open: true
+    tty: true
+    depends_on:
+      - order-service
