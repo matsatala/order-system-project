@@ -18,32 +18,36 @@ public class Main {
         System.out.println("   SYSTEM ZAMÓWIEŃ v2.0 (CLI)   ");
         System.out.println("=========================================");
 
+
+        String email = changeEmail(scanner);
+
         while (true) {
             System.out.println("\n--- MENU ---");
             System.out.println("1. Utwórz nowe zamówienie (Koszyk)");
             System.out.println("2. Zapłać za zamówienie (Realizacja)");
             System.out.println("3. Pokaż moje zamówienia (Historia)");
-            System.out.println("4. Wyjście");
+            System.out.println("4. Zmień email");
+            System.out.println("5. Wyjście");
             System.out.print("Wybierz opcję > ");
 
             String choice = scanner.nextLine();
 
-            if ("4".equals(choice)) break;
+            if ("5".equals(choice)) break;
 
             switch (choice) {
-                case "1" -> createOrder(scanner, client);
+                case "1" -> createOrder(scanner, client,email);
                 case "2" -> payOrder(scanner, client);
-                case "3" -> listOrders(scanner, client);
+                case "3" -> listOrders(scanner, client, email);
+                case "4" -> email = changeEmail(scanner);
                 default -> System.out.println("Nieznana opcja.");
             }
         }
     }
 
     // Opcja 1: Tylko zapis do bazy (status UNPAID)
-    private static void createOrder(Scanner scanner, HttpClient client) {
+    private static void createOrder(Scanner scanner, HttpClient client,String email) {
         try {
-            System.out.print("Podaj e-mail: ");
-            String email = scanner.nextLine();
+
             System.out.print("Podaj kwotę: ");
             String amount = scanner.nextLine().replace(",", ".");
 
@@ -89,10 +93,8 @@ public class Main {
     }
 
     // Opcja 3: Pobranie listy z bazy
-    private static void listOrders(Scanner scanner, HttpClient client) {
+    private static void listOrders(Scanner scanner, HttpClient client,String email) {
         try {
-            System.out.print("Podaj e-mail do sprawdzenia: ");
-            String email = scanner.nextLine();
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(API_URL + "/" + email))
@@ -102,11 +104,16 @@ public class Main {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
             System.out.println("📜 Historia zamówień dla: " + email);
-            // Wyświetlamy surowy JSON (w prawdziwej aplikacji użylibyśmy biblioteki Jackson do formatowania)
             System.out.println(response.body());
 
         } catch (Exception e) {
             System.out.println("Błąd: " + e.getMessage());
         }
+    }
+    private static String changeEmail(Scanner scanner){
+        System.out.print("Podaj e-mail: ");
+        String email = scanner.nextLine();
+        return email;
+
     }
 }
