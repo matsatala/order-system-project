@@ -5,64 +5,68 @@ Projekt edukacyjny symulujący backend systemu e-commerce oparty na architekturz
 Całość jest w pełni skonteneryzowana (Docker) i komunikuje się za pomocą RabbitMQ.
 🏗️ Architektura i realizacja
 
-System został podzielony na niezależne serwisy (kontenery), które komunikują się ze sobą synchronicznie (REST API) oraz asynchronicznie (Message Broker):
+System został podzielony na niezależne serwisy (kontenery), które komunikują się ze sobą synchronicznie (REST API) oraz asynchronicznie (Message Broker).
 
-    Store Client (CLI): Interfejs konsolowy dla użytkownika. Komunikuje się z backendem przez REST API.
 
-    Order Service: Serce systemu. Przyjmuje zamówienia, zapisuje je w bazie danych PostgreSQL i po zatwierdzeniu płatności wysyła zdarzenie (Event) na kolejkę RabbitMQ.
+Opis serwisów:
 
-    Payment Service: Konsument RabbitMQ. Odbiera informację o nowym zamówieniu i symuluje procesowanie płatności.
-
-    Infrastructure Service: Konsument RabbitMQ. Odpowiada za integrację z systemami zewnętrznymi:
-
-        Generuje fakturę tekstową i wysyła ją na serwer FTP.
-
-        Wysyła e-mail z potwierdzeniem zamówienia przez serwer SMTP.
+Store Client (CLI): Interfejs konsolowy dla użytkownika. Komunikuje się z backendem przez REST API.
+    
+Order Service: Serce systemu. Przyjmuje zamówienia, zapisuje je w bazie danych PostgreSQL i po zatwierdzeniu płatności wysyła zdarzenie (Event) na kolejkę RabbitMQ.
+    
+Payment Service: Konsument RabbitMQ. Odbiera informację o nowym zamówieniu i symuluje procesowanie płatności.
+    
+Infrastructure Service: Konsument RabbitMQ. Odpowiada za integrację z systemami zewnętrznymi:
+    
+Generuje fakturę tekstową i wysyła ją na serwer FTP.
+    
+Wysyła e-mail z potwierdzeniem zamówienia przez serwer SMTP.
 
 🚀 Użyte technologie
 
-    Język: Java 21
+Język: Java 21
 
-    Framework: Spring Boot 3 (Web, Data JPA, AMQP, Mail)
+Framework: Spring Boot 3 (Web, Data JPA, AMQP, Mail)
 
-    Konteneryzacja: Docker & Docker Compose
+Konteneryzacja: Docker & Docker Compose
 
-    Baza danych: PostgreSQL 15
+Baza danych: PostgreSQL 15
 
-    Message Broker: RabbitMQ 3
+Message Broker: RabbitMQ 3 (z pluginem Management)
 
-    Inne: Alpine FTP Server
+Inne: Alpine FTP Server
 
 📋 Wymagania
 
 Aby uruchomić projekt, potrzebujesz jedynie:
 
-    Zainstalowanego środowiska Docker oraz Docker Compose.
+Zainstalowanego środowiska Docker oraz Docker Compose.
 
-    Konta pocztowego (np. Gmail) do testowania wysyłki e-mail.
+Konta pocztowego (np. Gmail) do testowania wysyłki e-mail.
 
 ⚙️ Konfiguracja (.env)
 
 W głównym katalogu projektu utwórz plik o nazwie .env. Jest on niezbędny do ustawienia haseł i konfiguracji usług bez ingerencji w kod.
 
-Skopiuj poniższą zawartość i uzupełnij swoje dane a następnie zapisz plike w postaci .env w katalogu projetkowym.
+Skopiuj poniższą zawartość, uzupełnij swoje dane, a następnie zapisz plik:
+
 
 # ==========================================
 # 📧 KONFIGURACJA E-MAIL (SMTP)
 # ==========================================
 
 # Adres serwera SMTP (np. dla Gmail: smtp.gmail.com, dla Mailtrap: sandbox.smtp.mailtrap.io)
-MAIL_HOST=smtp.gmail.com
+MAIL_HOST=
 
 # Port serwera (np. dla Gmail TLS: 587, dla Mailtrap: 2525)
-MAIL_PORT=587
+MAIL_PORT=
 
 # Twój pełny adres e-mail
-MAIL_USER=twoj.email@gmail.com
+MAIL_USER=
 
 # Hasło do poczty.
 # UWAGA dla Gmaila: Tutaj musisz podać 16-znakowe "Hasło do aplikacji", a nie swoje hasło logowania!
-MAIL_PASS=xxxx xxxx xxxx xxxx
+MAIL_PASS=
 
 
 ▶️ Jak uruchomić projekt?
@@ -73,7 +77,8 @@ Bash
 
 docker compose up -d --build
 
-Poczekaj około 15-20 sekund, aż baza danych i RabbitMQ w pełni wystartują.
+    💡 Wskazówka: Poczekaj około 15-20 sekund, aż baza danych i RabbitMQ w pełni wystartują.
+
 Krok 2: Uruchomienie Klienta
 
 Ponieważ klient wymaga interakcji (wpisywania danych z klawiatury), uruchamiamy go osobną komendą w trybie interaktywnym:
@@ -83,7 +88,7 @@ docker compose run --rm store-client
 
 🖥️ Instrukcja obsługi
 
-Po uruchomieniu klienta i podaniu adresu e-mail zobaczysz menu w terminalu. Poruszaj się po nim wpisując numery opcji:
+Po uruchomieniu klienta zobaczysz menu w terminalu. Poruszaj się po nim, wpisując numery opcji.
 
     Utwórz nowe zamówienie (Koszyk):
 
@@ -107,14 +112,23 @@ Po uruchomieniu klienta i podaniu adresu e-mail zobaczysz menu w terminalu. Poru
 
 🐛 Rozwiązywanie problemów
 
-    Błąd Network ... needs to be recreated: Wykonaj docker compose down, a następnie docker compose up -d.
+    Błąd Network ... needs to be recreated Wykonaj komendę resetującą sieć:
+    Bash
 
-    FTP nie wstaje (Bad password): Upewnij się, że w pliku .env hasło FTP_PASS ma co najmniej 6 znaków.
+    docker compose down && docker compose up -d
 
-    Brak maili: Sprawdź logi serwisu infrastruktury: docker compose logs infra-service. Upewnij się, że używasz poprawnego hosta, portu i hasła aplikacji (w przypadku Gmaila).
+    FTP nie wstaje (Bad password) Upewnij się, że w pliku .env hasło FTP_PASS ma co najmniej 6 znaków.
+
+    Brak maili Sprawdź logi serwisu infrastruktury wpisując:
+    Bash
+
+    docker compose logs infra-service
+
+    Upewnij się, że używasz poprawnego hosta, portu i hasła aplikacji (w przypadku Gmaila).
 
     Gdzie są faktury? Jeśli skonfigurowałeś wolumen w docker-compose.yml, pliki faktur znajdziesz w folderze ./ftp_data na swoim komputerze.
 
 🛑 Zatrzymywanie aplikacji
 
+Aby bezpiecznie zatrzymać system i usunąć kontenery, wpisz:
 Aby bezpiecznie zatrzymać system i usunąć kontenery:
