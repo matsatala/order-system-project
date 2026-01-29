@@ -12,13 +12,12 @@ public class PaymentStatusListener {
         this.orderRepository = orderRepository;
     }
 
-    // Nasłuchujemy na naszej nowej kolejce
+    // Nasłuchujemy na naszej kolejce
     @RabbitListener(queues = RabbitMqConfig.ORDER_STATUS_QUEUE)
     public void handlePaymentStatus(PaymentEvent event) {
         System.out.println(" [Order Service] Otrzymano info o płatności dla ID: " + event.orderId());
 
         // Sprawdzamy, czy płatność się udała
-        // (W zależności od tego czy używasz Enuma czy Stringa w PaymentService, dostosuj ten warunek)
         if (PaymentStatus.SUCCESS.equals(event.status())) {
 
             orderRepository.findById(event.orderId()).ifPresent(order -> {

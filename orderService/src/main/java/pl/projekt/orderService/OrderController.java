@@ -24,7 +24,6 @@ public class OrderController {
         // 1. Ustawiamy status początkowy
         order.setStatus("UNPAID");
 
-        // 2. Zapisujemy w bazie - TO TUTAJ Baza Danych nadaje ID (np. 1)
         return orderRepository.save(order);
     }
 
@@ -41,7 +40,6 @@ public class OrderController {
         order.setStatus("PENDING");
         Order savedOrder = orderRepository.save(order);
 
-        // Dopiero TERAZ wysyłamy do RabbitMQ -> Payment -> Infra
         OrderEvent event = new OrderEvent(
                 savedOrder.getId(),
                 savedOrder.getCustomerEmail(),

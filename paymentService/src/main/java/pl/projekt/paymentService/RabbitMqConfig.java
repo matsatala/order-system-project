@@ -22,17 +22,12 @@ public class RabbitMqConfig {
     @Bean
     public MessageConverter jsonMessageConverter() {
 
-            // 1. Używamy nowoczesnego buildera dla Jacksona (tzw. Jackson 3 way)
             var jsonMapper = JsonMapper.builder()
-                    .findAndAddModules() // Obsługa dat (Java 8 Time)
+                    .findAndAddModules()
                     .build();
 
-            // 2. Tworzymy konwerter z naszym mapperem
             JacksonJsonMessageConverter converter = new JacksonJsonMessageConverter(jsonMapper);
 
-            // 3. KLUCZOWE: Mówimy konwerterowi:
-            // "Nie patrz na nagłówki wiadomości (__TypeId__).
-            // Użyj typu, który jest zadeklarowany w metodzie @RabbitListener".
             converter.setTypePrecedence(JacksonJavaTypeMapper.TypePrecedence.INFERRED);
 
             return converter;

@@ -16,7 +16,7 @@ public class RabbitMqConfig {
     public static final String EXCHANGE = "order_exchange";
     public static final String QUEUE = "order_queue";
     public static final String ROUTING_KEY = "order_routing_key";
-    // dane do obsługi
+    // dane do obsługi platnosci
     public static final String PAYMENT_EXCHANGE = "payment_exchange";
     public static final String PAYMENT_ROUTING_KEY = "payment_routing_key";
     public static final String ORDER_STATUS_QUEUE = "order_payment_status_update_queue"; // Unikalna nazwa
@@ -44,13 +44,11 @@ public class RabbitMqConfig {
 
     @Bean
     public TopicExchange paymentExchange() {
-        // Deklarujemy exchange płatności, żeby móc się do niego podpiąć
         return new TopicExchange(PAYMENT_EXCHANGE);
     }
 
     @Bean
     public Binding paymentBinding(Queue paymentStatusQueue, TopicExchange paymentExchange) {
-        // Łączymy naszą kolejkę z exchange'em płatności
         return BindingBuilder.bind(paymentStatusQueue).to(paymentExchange).with(PAYMENT_ROUTING_KEY);
     }
 
